@@ -76,11 +76,32 @@ app.get("/todos/", async (request, response) => {
   let data = null;
   let getTodoSqlQuery = "";
   const { search_q = "", priority, status, category } = request.query;
-
-  /** switch case  */
   switch (true) {
+    //scenario 1
+    case hasStatusProperty(request.query):
+      if (status === "TO DO" || status === "IN PROGRESS" || status === "DONE") {
+        getTodoSqlQuery = `SELECT * FROM todo WHERE status = '${status}';`;
+        data = await db.all(getTodoSqlQuery);
+        response.send(data.map((eachItem) => outPutResult(eachItem)));
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Status");
+      }
+      break;
+    //scenario 2
+    case hasPriorityProperty(request.query):
+      if (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW") {
+        getTodoSqlQuery = `
+      SELECT * FROM todo WHERE priority = '${priority}';`;
+        data = await database.all(getTodoSqlQuery);
+        response.send(data.map((eachItem) => outPutResult(eachItem)));
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Priority");
+      }
+      break;
     //scenario 3
-    /**----------- has priority and status -------- */
+
     case hasPriorityAndStatusProperties(request.query):
       if (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW") {
         if (
@@ -91,7 +112,7 @@ app.get("/todos/", async (request, response) => {
           getTodoSqlQuery = `
       SELECT * FROM todo  WHERE status = '${status}' AND priority = '${priority}';`;
           data = await db.all(getTodoSqlQuery);
-          response.send(data.map((eachItem) => outputFormat(eachItem)));
+          response.send(data.map((eachItem) => outPutResult(eachItem)));
         } else {
           response.status(400);
           response.send("Invalid Todo Status");
@@ -102,9 +123,14 @@ app.get("/todos/", async (request, response) => {
       }
 
       break;
+    //scenario 4
+    case hasSearchProperty(request.query):
+      getTodoSqlQuery = `select * from todo where todo like '%${search_q}%';`;
+      data = await db.all(getTodoSqlQuery);
+      response.send(data.map((eachItem) => outPutResult(eachItem)));
+      break;
 
     //scenario 5
-    /** has  category and status  */
     case hasCategoryAndStatus(request.query):
       if (
         category === "WORK" ||
@@ -118,7 +144,7 @@ app.get("/todos/", async (request, response) => {
         ) {
           getTodoSqlQuery = `select * from todo where category='${category}' and status='${status}';`;
           data = await db.all(getTodoSqlQuery);
-          response.send(data.map((eachItem) => outputFormat(eachItem)));
+          response.send(data.map((eachItem) => outPutResult(eachItem)));
         } else {
           response.status(400);
           response.send("Invalid Todo Status");
@@ -130,8 +156,25 @@ app.get("/todos/", async (request, response) => {
 
       break;
 
+    //scenario 6
+
+    case hasCategoryProperty(request.query):
+      if (
+        category === "WORK" ||
+        category === "HOME" ||
+        category === "LEARNING"
+      ) {
+        getTodoSqlQuery = `select * from todo where category = '${category}';`;
+        data = await db.all(getTodoSqlQuery);
+        response.send(data.map((eachItem) => outPutResult(eachItem)));
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Category");
+      }
+      break;
+
     //scenario 7
-    /** has both category and priority */
+
     case hasCategoryAndPriority(request.query):
       if (
         category === "WORK" ||
@@ -145,7 +188,7 @@ app.get("/todos/", async (request, response) => {
         ) {
           getTodoSqlQuery = `select * from todo where category='${category}' and priority='${priority}';`;
           data = await db.all(getTodoSqlQuery);
-          response.send(data.map((eachItem) => outputFormat(eachItem)));
+          response.send(data.map((eachItem) => outPutResult(eachItem)));
         } else {
           response.status(400);
           response.send("Invalid Todo Priority");
@@ -157,61 +200,11 @@ app.get("/todos/", async (request, response) => {
 
       break;
 
-    //scenario 2
-    /**-------------- has only priority---------- */
-    case hasPriorityProperty(request.query):
-      if (priority === "HIGH" || priority === "MEDIUM" || priority === "LOW") {
-        getTodoSqlQuery = `
-      SELECT * FROM todo WHERE priority = '${priority}';`;
-        data = await db.all(getTodoSqlQuery);
-        response.send(data.map((eachItem) => outputFormat(eachItem)));
-      } else {
-        response.status(400);
-        response.send("Invalid Todo Priority");
-      }
-      break;
-
-    //scenario 1
-    /**-------------has only status ------------ */
-    case hasStatusProperty(request.query):
-      if (status === "TO DO" || status === "IN PROGRESS" || status === "DONE") {
-        getTodoSqlQuery = `SELECT * FROM todo WHERE status = '${status}';`;
-        data = await db.all(getTodoSqlQuery);
-        response.send(data.map((eachItem) => outputFormat(eachItem)));
-      } else {
-        response.status(400);
-        response.send("Invalid Todo Status");
-      }
-      break;
-    //has only search property
-    //scenario 4
-    case hasSearchProperty(request.query):
-      getTodoSqlQuery = `select * from todo where todo like '%${search_q}%';`;
-      data = await db.all(getTodoSqlQuery);
-      response.send(data.map((eachItem) => outputFormat(eachItem)));
-      break;
-    //scenario 6
-    //has only category
-    case hasCategoryProperty(request.query):
-      if (
-        category === "WORK" ||
-        category === "HOME" ||
-        category === "LEARNING"
-      ) {
-        getTodoSqlQuery = `select * from todo where category='${category}';`;
-        data = await db.all(getTodoSqlQuery);
-        response.send(data.map((eachItem) => outputFormat(eachItem)));
-      } else {
-        response.status(400);
-        response.send("Invalid Todo Category");
-      }
-      break;
-
-    //default get all todos
+    //default todos
     default:
       getTodoSqlQuery = `select * from todo;`;
       data = await db.all(getTodoSqlQuery);
-      response.send(data.map((eachItem) => outputFormat(eachItem)));
+      response.send(data.map((eachItem) => outPutResult(eachItem)));
   }
 });
 
